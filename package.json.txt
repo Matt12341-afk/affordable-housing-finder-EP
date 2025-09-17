@@ -1,5 +1,5 @@
 {
-  "name": "affordable-housing-finder",
+  "name": "affordable-housing-finder-EP",
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
