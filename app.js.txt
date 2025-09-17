@@ -1,0 +1,104 @@
+// Run with: node app.js
+// Then open http://localhost:4000 in your browser
+
+const express = require("express");
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+// --- Mock data for demo purposes ---
+const listings = [
+  {
+    title: "Goldsmith Manor – 1 BR (Income Restricted)",
+    address: "99 Goldsmith Ave, East Providence, RI",
+    rent: 850,
+    beds: 1,
+    section8: true,
+    link: "https://ephousing.org/public-housing/"
+  },
+  {
+    title: "Harbor View Gardens – 2 BR (LIHTC)",
+    address: "Warren Ave, East Providence, RI",
+    rent: 1200,
+    beds: 2,
+    section8: false,
+    link: "https://housingsearchri.org/"
+  }
+];
+
+// --- Simplified HUD income limits for demo ---
+const incomeLimits = {
+  1: 42000,
+  2: 48000,
+  3: 54000,
+  4: 60000
+};
+
+// --- API endpoint (JSON) ---
+app.get("/api/listings", (req, res) => res.json(listings));
+
+// --- Frontend (HTML + JS) ---
+app.get("/", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>East Providence Affordable Housing Finder</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        .card { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; }
+        .calc { margin-top: 2em; padding: 1em; border: 1px solid #666; }
+      </style>
+    </head>
+    <body>
+      <h1>East Providence Affordable Housing</h1>
+      <div id="listings">Loading...</div>
+
+      <div class="calc">
+        <h2>Income Eligibility Checker</h2>
+        <label>Household Size:
+          <input type="number" id="size" value="1" min="1" max="8">
+        </label><br><br>
+        <label>Annual Household Income ($):
+          <input type="number" id="income" value="0" min="0">
+        </label><br><br>
+        <button onclick="checkEligibility()">Check</button>
+        <p id="result"></p>
+      </div>
+
+      <script>
+        // Load listings
+        fetch('/api/listings')
+          .then(r => r.json())
+          .then(data => {
+            const div = document.getElementById('listings');
+            div.innerHTML = data.map(l => \`
+              <div class="card">
+                <h3>\${l.title} — $\${l.rent}/mo</h3>
+                <p>\${l.address} • \${l.beds} bed</p>
+                <p>Accepts Section 8: \${l.section8 ? "Yes" : "No"}</p>
+                <a href="\${l.link}" target="_blank">More info</a>
+              </div>
+            \`).join('');
+          });
+
+        // Income calculator
+        const limits = ${JSON.stringify(incomeLimits)};
+        function checkEligibility() {
+          const size = document.getElementById('size').value;
+          const income = document.getElementById('income').value;
+          const limit = limits[size] || limits[4]; // default to 4-person
+          const eligible = income <= limit;
+          document.getElementById('result').innerText =
+            eligible
+              ? "✅ Likely income-eligible (income ≤ $" + limit + " for household size " + size + ")"
+              : "❌ Income above affordable housing threshold (limit: $" + limit + ")";
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+app.listen(PORT, () => {
+  console.log("App running at http://localhost:" + PORT);
+});
